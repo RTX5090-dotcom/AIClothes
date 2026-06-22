@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DRIP — AI Outfit Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --surface3: #272727;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #c8f04a;
+    --accent-dim: rgba(200,240,74,0.12);
+    --accent-text: #0d0d0d;
+    --text: #f0f0f0;
+    --text2: #999;
+    --text3: #555;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,13,13,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+  }
+  .logo {
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .nav-tab {
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: var(--text2);
+    background: none;
+    transition: all 0.18s;
+    letter-spacing: 0.02em;
+  }
+  .nav-tab:hover { color: var(--text); border-color: var(--border2); }
+  .nav-tab.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .wardrobe-count {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+    display: inline-block;
+  }
+
+  /* ─── PAGES ─── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── HERO ─── */
+  .hero {
+    text-align: center;
+    padding: 80px 2rem 60px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 6vw, 64px);
+    line-height: 1.1;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p {
+    color: var(--text2);
+    font-size: 16px;
+    max-width: 460px;
+    margin: 0 auto 36px;
+  }
+  .hero-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-outline {
+    background: none;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .btn-outline:hover { border-color: var(--text2); }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    overflow-y: auto;
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    background: var(--surface);
+  }
+  .sidebar-section { margin-bottom: 28px; }
+  .sidebar-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  /* Mode toggle */
+  .mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    gap: 3px;
+    margin-bottom: 20px;
+  }
+  .mode-btn {
+    padding: 9px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text2);
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .mode-btn.active { background: var(--surface3); color: var(--text); }
+
+  /* Style pills */
+  .style-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .style-pill {
+    padding: 6px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--border2);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text2);
+    transition: all 0.14s;
+    background: none;
+  }
+  .style-pill:hover { color: var(--text); border-color: var(--text3); }
+  .style-pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  /* Occasion input */
+  .sidebar-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: var(--font-body);
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .sidebar-input:focus { border-color: var(--accent); }
+  .sidebar-input::placeholder { color: var(--text3); }
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .generate-btn:hover { opacity: 0.88; }
+  .generate-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Wardrobe items in sidebar */
+  .wardrobe-mini { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+  .wardrobe-mini-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+  }
+  .wardrobe-mini-item .emoji { font-size: 16px; flex-shrink: 0; }
+  .wardrobe-mini-item .name { flex: 1; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wardrobe-mini-item .remove {
+    background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 0; line-height: 1;
+  }
+  .wardrobe-mini-item .remove:hover { color: #f05; }
+  .wardrobe-empty { font-size: 13px; color: var(--text3); text-align: center; padding: 16px; }
+
+  /* ─── CONTENT AREA ─── */
+  .content { padding: 32px; overflow-y: auto; }
+
+  /* ─── SEARCH BAR (World mode) ─── */
+  .search-bar-wrap { margin-bottom: 28px; }
+  .search-bar {
+    display: flex;
+    gap: 10px;
+  }
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text3); }
+  .search-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .search-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── CLOTHING CARDS ─── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .clothing-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+    position: relative;
+  }
+  .clothing-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .clothing-card.selected { border-color: var(--accent); }
+  .card-img {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .card-img.placeholder { font-size: 48px; }
+  .card-body { padding: 12px; }
+  .card-brand { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .card-name { font-size: 13px; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+  .card-price { font-size: 13px; font-weight: 600; color: var(--accent); }
+  .card-add {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(13,13,13,0.8);
+    border: 1px solid var(--border2);
+    border-radius: 999px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    cursor: pointer;
+    color: var(--text2);
+    transition: all 0.15s;
+    backdrop-filter: blur(6px);
+  }
+  .card-add:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .card-add.saved { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+  /* ─── WARDROBE PAGE ─── */
+  .wardrobe-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .add-item-form {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+  }
+  .add-item-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: var(--font-body);
+    outline: none;
+  }
+  .add-item-input:focus { border-color: var(--accent); }
+  .add-item-input::placeholder { color: var(--text3); }
+  .add-item-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .add-item-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .wardrobe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  .wardrobe-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 14px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .wardrobe-card:hover { border-color: var(--border2); }
+  .wardrobe-card .wc-emoji { font-size: 36px; margin-bottom: 10px; display: block; }
+  .wardrobe-card .wc-name { font-size: 13px; color: var(--text2); line-height: 1.3; }
+  .wardrobe-card .wc-category { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .wardrobe-card .wc-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px;
+    line-height: 1;
+  }
+  .wardrobe-card .wc-remove:hover { color: #f05; }
+  .wardrobe-card .wc-img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 10px;
+  }
+
+  /* ─── AI RESULT ─── */
+  .ai-result-wrap { margin-top: 32px; }
+  .ai-result {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .ai-result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .ai-result-title { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.04em; }
+  .ai-result-body {
+    padding: 24px;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text2);
+    white-space: pre-wrap;
+  }
+  .ai-result-body strong { color: var(--text); font-weight: 600; }
+  .ai-result-body .outfit-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+  .ai-result-body .outfit-block {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin: 12px 0;
+    border-left: 2px solid var(--accent);
+  }
+  .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    height: 16px;
+    background: var(--accent);
+    margin-left: 2px;
+    vertical-align: -2px;
+    animation: blink 0.7s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* ─── LOADING / EMPTY STATES ─── */
+  .loading-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text3);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state p { font-size: 14px; }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  /* ─── CATEGORY CHIPS ─── */
+  .category-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .cat-chip {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border2);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text2);
+    background: none;
+    transition: all 0.14s;
+  }
+  .cat-chip:hover { color: var(--text); }
+  .cat-chip.active { background: var(--surface2); border-color: var(--text3); color: var(--text); }
+
+  @media (max-width: 768px) {
+    .main-layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">DRIP</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('world')">🌍 World</button>
+    <button class="nav-tab" onclick="showPage('wardrobe')" id="wardrobe-tab">
+      Wardrobe <span class="wardrobe-count" id="wardrobe-count">0</span>
+    </button>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE: WORLD
+══════════════════════════════════════════════════ -->
+<div class="page active" id="page-world">
+  <div class="main-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-btn-world" onclick="setMode('world')">🌍 World pieces</button>
+        <button class="mode-btn" id="mode-btn-wardrobe" onclick="setMode('wardrobe-mode')">🗂 My wardrobe</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Style vibe</div>
+        <div class="style-pills" id="style-pills">
+          <button class="style-pill" data-s="Casual">Casual</button>
+          <button class="style-pill" data-s="Smart casual">Smart casual</button>
+          <button class="style-pill" data-s="Streetwear">Streetwear</button>
+          <button class="style-pill" data-s="Minimalist">Minimalist</button>
+          <button class="style-pill" data-s="Formal">Formal</button>
+          <button class="style-pill" data-s="Bohemian">Bohemian</button>
+          <button class="style-pill" data-s="Vintage">Vintage</button>
+          <button class="style-pill" data-s="Sporty">Sporty</button>
+          <button class="style-pill" data-s="Dark / Edgy">Dark / Edgy</button>
+          <button class="style-pill" data-s="Romantic">Romantic</button>
+          <button class="style-pill" data-s="Business">Business</button>
+          <button class="style-pill" data-s="Y2K">Y2K</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Occasion <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--text3)">(optional)</span></div>
+        <textarea class="sidebar-input" id="occasion-input" rows="2" placeholder="dinner date, job interview, beach day…"></textarea>
+      </div>
+
+      <div class="sidebar-section" id="wardrobe-preview-section" style="display:none;">
+        <div class="sidebar-label">My wardrobe</div>
+        <div class="wardrobe-mini" id="wardrobe-mini-list"></div>
+      </div>
+
+      <button class="generate-btn" id="generate-btn" disabled onclick="generateOutfit()">
+        ✦ Build my outfit
+      </button>
+
+      <div id="ai-result-sidebar" style="margin-top:20px;"></div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content" id="world-content">
+      <div class="search-bar-wrap">
+        <div class="search-bar">
+          <input class="search-input" id="search-input" placeholder="Search for clothes — try 'linen blazer', 'white sneakers', 'floral dress'…" />
+          <button class="search-btn" onclick="searchClothes()">Search</button>
+        </div>
+      </div>
+
+      <div class="category-chips">
+        <button class="cat-chip active" onclick="quickSearch('trending outfits 2025')">Trending</button>
+        <button class="cat-chip" onclick="quickSearch('minimalist basics wardrobe')">Basics</button>
+        <button class="cat-chip" onclick="quickSearch('streetwear clothing')">Streetwear</button>
+        <button class="cat-chip" onclick="quickSearch('summer dresses women')">Summer</button>
+        <button class="cat-chip" onclick="quickSearch('men formal suits')">Formal</button>
+        <button class="cat-chip" onclick="quickSearch('vintage clothing pieces')">Vintage</button>
+        <button class="cat-chip" onclick="quickSearch('athletic sportswear')">Sporty</button>
+      </div>
+
+      <div id="cards-area">
+        <div class="empty-state">
+          <div class="empty-icon">👗</div>
+          <p>Search for clothing pieces above, or pick a category.<br>Save pieces to your wardrobe or ask AI to build an outfit.</p>
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PAGE: WARDROBE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-wardrobe">
+  <div style="padding:32px; max-width:1100px; margin:0 auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+      <div>
+        <h2 style="font-family:var(--font-display);font-size:28px;font-weight:700;margin-bottom:4px;">My Wardrobe</h2>
+        <p style="color:var(--text3);font-size:14px;">Your saved pieces. Ask the AI to build an outfit using only these.</p>
+      </div>
+    </div>
+
+    <div class="wardrobe-toolbar">
+      <div class="add-item-form">
+        <input class="add-item-input" id="manual-add-input" placeholder="Add item manually — e.g. 'white linen shirt, oversized'" />
+        <button class="add-item-btn" onclick="addManualItem()">+ Add</button>
+      </div>
+    </div>
+
+    <div id="wardrobe-grid-area">
+      <div class="empty-state">
+        <div class="empty-icon">🗂</div>
+        <p>Your wardrobe is empty. Search for clothes in World mode<br>and save pieces here, or add items manually above.</p>
+      </div>
+    </div>
+
+    <div id="wardrobe-ai-section" style="margin-top:40px;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div class="section-title" style="margin-bottom:0;">AI Outfit from your wardrobe</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="wardrobe-style-select" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;outline:none;">
+            <option value="">Pick a style…</option>
+            <option>Casual</option><option>Smart casual</option><option>Streetwear</option>
+            <option>Minimalist</option><option>Formal</option><option>Bohemian</option>
+            <option>Vintage</option><option>Sporty</option><option>Dark / Edgy</option>
+            <option>Romantic</option><option>Business</option><option>Y2K</option>
+          </select>
+          <button class="generate-btn" style="width:auto;padding:10px 20px;" onclick="generateWardrobeOutfit()">✦ Generate outfit</button>
+        </div>
+      </div>
+      <div id="wardrobe-ai-result"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────
+let wardrobe = JSON.parse(localStorage.getItem('drip_wardrobe') || '[]');
+let selectedStyle = null;
+let currentMode = 'world'; // 'world' or 'wardrobe-mode'
+let searchResults = [];
+let isStreaming = false;
+
+const EMOJIS = {
+  shirt:'👕',blouse:'👚',top:'👕',tee:'👕',polo:'🎽',tank:'🎽',
+  pants:'👖',jeans:'👖',trousers:'👖',shorts:'🩳',skirt:'👗',
+  dress:'👗',gown:'👗',jumpsuit:'👗',romper:'👗',
+  jacket:'🧥',coat:'🧥',blazer:'🧥',hoodie:'🧥',sweater:'🧶',cardigan:'🧶',
+  shoes:'👟',boots:'👢',heels:'👠',sneakers:'👟',loafers:'🥿',sandals:'👡',oxfords:'👞',
+  hat:'🧢',cap:'🧢',beanie:'🧣',scarf:'🧣',belt:'👔',bag:'👜',purse:'👜',
+  suit:'👔',tie:'👔',vest:'🦺',gloves:'🧤',socks:'🧦',
+};
+function getEmoji(name) {
+  const l = (name||'').toLowerCase();
+  for(const[k,e] of Object.entries(EMOJIS)) if(l.includes(k)) return e;
+  return '🧷';
+}
+
+// ─── PAGE SWITCHING ───────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(name==='world') document.querySelectorAll('.nav-tab')[0].classList.add('active');
+  else document.querySelectorAll('.nav-tab')[1].classList.add('active');
+  if(name==='wardrobe') renderWardrobePage();
+}
+
+// ─── MODE (sidebar) ───────────────────────────────────
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('mode-btn-world').classList.toggle('active', m==='world');
+  document.getElementById('mode-btn-wardrobe').classList.toggle('active', m==='wardrobe-mode');
+  document.getElementById('wardrobe-preview-section').style.display = m==='wardrobe-mode' ? 'block' : 'none';
+  if(m==='wardrobe-mode') renderWardrobeMini();
+  updateGenerateBtn();
+}
+
+// ─── STYLE PILLS ─────────────────────────────────────
+document.querySelectorAll('.style-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.style-pill').forEach(p=>p.classList.remove('active'));
+    if(selectedStyle === pill.dataset.s) { selectedStyle = null; }
+    else { selectedStyle = pill.dataset.s; pill.classList.add('active'); }
+    updateGenerateBtn();
+  });
+});
+
+function updateGenerateBtn() {
+  const btn = document.getElementById('generate-btn');
+  const hasStyle = !!selectedStyle;
+  const hasWardrobe = wardrobe.length > 0;
+  if(currentMode === 'wardrobe-mode') {
+    btn.disabled = !hasStyle || !hasWardrobe;
+    btn.title = !hasWardrobe ? 'Add items to your wardrobe first' : '';
+  } else {
+    btn.disabled = !hasStyle;
+  }
+}
+
+// ─── SEARCH ──────────────────────────────────────────
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if(e.key==='Enter') searchClothes();
+});
+
+function quickSearch(q) {
+  document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('search-input').value = q;
+  searchClothes();
+}
+
+async function searchClothes() {
+  const q = document.getElementById('search-input').value.trim();
+  if(!q) return;
+  document.getElementById('cards-area').innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><p>Finding pieces…</p></div>`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        tools:[{"type":"web_search_20250305","name":"web_search"}],
+        system: `You are a fashion sourcing assistant. When given a clothing search query, search the web and return a JSON array of real clothing items. Each item must have: name, brand, price (as a string like "$89"), category (e.g. "Tops", "Bottoms", "Shoes", "Outerwear", "Accessories"), description (1 sentence), and url (real product page URL if found, otherwise a search URL). Return ONLY valid JSON array, no markdown, no explanation. Include 8-12 items.`,
+        messages:[{role:'user', content:`Search for: ${q}\n\nReturn a JSON array of real clothing items available to buy.`}]
+      })
+    });
+    const data = await res.json();
+
+    // Extract text from response
+    let rawText = '';
+    for(const block of data.content) {
+      if(block.type==='text') rawText += block.text;
+    }
+
+    // Parse JSON
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+    if(!jsonMatch) throw new Error('No JSON found');
+    const items = JSON.parse(jsonMatch[0]);
+    searchResults = items;
+    renderCards(items);
+  } catch(e) {
+    document.getElementById('cards-area').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Search failed. Try a different query.</p></div>`;
+  }
+}
+
+function renderCards(items) {
+  if(!items.length) {
+    document.getElementById('cards-area').innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No results found. Try a different search.</p></div>`;
+    return;
+  }
+  const inWardrobe = new Set(wardrobe.map(w=>w.id));
+  document.getElementById('cards-area').innerHTML = `
+    <div class="section-title">${items.length} pieces found</div>
+    <div class="cards-grid">
+      ${items.map((item,i) => {
+        const id = 'item_'+i+'_'+Date.now();
+        item._id = id;
+        const saved = wardrobe.some(w=>w.name===item.name && w.brand===item.brand);
+        return `
+        <div class="clothing-card" id="card-${i}">
+          <div class="card-img placeholder">${getEmoji(item.name+' '+item.category)}</div>
+          <button class="card-add ${saved?'saved':''}" onclick="toggleSave(${i})" title="${saved?'Remove from wardrobe':'Save to wardrobe'}">
+            ${saved?'✓':'+'}
+          </button>
+          <div class="card-body">
+            <div class="card-brand">${item.brand||'Unknown brand'}</div>
+            <div class="card-name">${item.name}</div>
+            <div class="card-price">${item.price||''}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function toggleSave(idx) {
+  const item = searchResults[idx];
+  const existing = wardrobe.findIndex(w=>w.name===item.name && w.brand===item.brand);
+  if(existing > -1) {
+    wardrobe.splice(existing,1);
+    showToast(`Removed "${item.name}" from wardrobe`);
+  } else {
+    wardrobe.push({
+      id: 'w_'+Date.now()+'_'+idx,
+      name: item.name,
+      brand: item.brand||'',
+      category: item.category||'',
+      price: item.price||'',
+      emoji: getEmoji(item.name+' '+(item.category||''))
+    });
+    showToast(`Saved "${item.name}" to wardrobe ✓`);
+  }
+  saveWardrobe();
+  // Re-render button
+  const btn = document.querySelector(`#card-${idx} .card-add`);
+  if(btn) {
+    const nowSaved = wardrobe.some(w=>w.name===item.name && w.brand===item.brand);
+    btn.className = 'card-add'+(nowSaved?' saved':'');
+    btn.textContent = nowSaved ? '✓' : '+';
+  }
+}
+
+// ─── GENERATE OUTFIT (World or Wardrobe mode) ─────────
+async function generateOutfit() {
+  if(isStreaming) return;
+  const style = selectedStyle;
+  const occasion = document.getElementById('occasion-input').value.trim();
+  if(!style) return;
+
+  isStreaming = true;
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Building…';
+
+  const resultEl = document.getElementById('ai-result-sidebar');
+  resultEl.innerHTML = `
+    <div class="ai-result">
+      <div class="ai-result-header"><div class="ai-dot"></div><span class="ai-result-title">AI Stylist</span></div>
+      <div class="ai-result-body" id="ai-stream-text"><span class="cursor-blink"></span></div>
+    </div>`;
+
+  let prompt;
+  if(currentMode === 'wardrobe-mode') {
+    const items = wardrobe.map(w=>`${w.emoji} ${w.brand ? w.brand+' — ':' '}${w.name}`).join('\n');
+    prompt = `You are an expert personal stylist. The user wants a ${style} outfit${occasion?' for '+occasion:''}.\n\nThey have ONLY these items in their wardrobe:\n${items}\n\nCreate 2 complete outfit combinations using ONLY items from the list above. For each:\n- A stylish italic outfit name\n- Exact pieces to wear from the list\n- 1-2 sentences of styling advice\n\nEnd with one wardrobe tip. Be specific, creative, and concise.`;
+  } else {
+    prompt = `You are an expert personal stylist. The user wants a ${style} outfit${occasion?' for '+occasion:''}.\n\nSuggest 2 complete stylish outfits with specific real clothing pieces (include brand names and specific items). For each outfit:\n- A stylish italic outfit name\n- List each piece with brand, item name, and approximate price\n- Where to find it (store or website)\n- 1-2 sentences of styling advice\n\nEnd with one general tip. Be specific and on-trend for 2025.`;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        stream:true,
+        messages:[{role:'user', content:prompt}]
+      })
+    });
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let full = '';
+    const el = document.getElementById('ai-stream-text');
+
+    while(true) {
+      const {done,value} = await reader.read();
+      if(done) break;
+      const chunk = dec.decode(value);
+      for(const line of chunk.split('\n')) {
+        if(line.startsWith('data: ')) {
+          const d = line.slice(6).trim();
+          if(d==='[DONE]') continue;
+          try {
+            const p = JSON.parse(d);
+            if(p.type==='content_block_delta' && p.delta?.text) {
+              full += p.delta.text;
+              el.innerHTML = formatAI(full)+'<span class="cursor-blink"></span>';
+            }
+          } catch{}
+        }
+      }
+    }
+    if(document.getElementById('ai-stream-text')) {
+      document.getElementById('ai-stream-text').innerHTML = formatAI(full);
+    }
+  } catch(e) {
+    resultEl.innerHTML = `<p style="color:#f05;font-size:13px;">Something went wrong. Please try again.</p>`;
+  }
+
+  isStreaming = false;
+  btn.disabled = false;
+  btn.textContent = '✦ Build my outfit';
+  updateGenerateBtn();
+}
+
+// ─── WARDROBE PAGE ────────────────────────────────────
+function renderWardrobePage() {
+  updateWardrobeCount();
+  const area = document.getElementById('wardrobe-grid-area');
+  const aiSection = document.getElementById('wardrobe-ai-section');
+
+  if(!wardrobe.length) {
+    area.innerHTML = `<div class="empty-state"><div class="empty-icon">🗂</div><p>Your wardrobe is empty. Search for clothes in World mode<br>and save pieces here, or add items manually above.</p></div>`;
+    aiSection.style.display = 'none';
+    return;
+  }
+
+  aiSection.style.display = 'block';
+  area.innerHTML = `
+    <div class="wardrobe-grid">
+      ${wardrobe.map((item,i)=>`
+        <div class="wardrobe-card">
+          <button class="wc-remove" onclick="removeFromWardrobe(${i})">×</button>
+          <span class="wc-emoji">${item.emoji||getEmoji(item.name)}</span>
+          <div class="wc-name">${item.brand?'<span style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.06em">'+item.brand+'</span><br>':''}${item.name}</div>
+          ${item.category?`<div class="wc-category">${item.category}</div>`:''}
+          ${item.price?`<div style="font-size:12px;color:var(--accent);margin-top:4px;">${item.price}</div>`:''}
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function removeFromWardrobe(i) {
+  const name = wardrobe[i].name;
+  wardrobe.splice(i,1);
+  saveWardrobe();
+  renderWardrobePage();
+  renderWardrobeMini();
+  showToast(`Removed "${name}" from wardrobe`);
+}
+
+function addManualItem() {
+  const input = document.getElementById('manual-add-input');
+  const val = input.value.trim();
+  if(!val) return;
+  val.split(',').map(v=>v.trim()).filter(Boolean).forEach(v=>{
+    wardrobe.push({ id:'w_'+Date.now()+'_'+Math.random(), name:v, emoji:getEmoji(v), brand:'', category:'', price:'' });
+  });
+  input.value = '';
+  saveWardrobe();
+  renderWardrobePage();
+  renderWardrobeMini();
+  updateGenerateBtn();
+}
+document.getElementById('manual-add-input').addEventListener('keydown', e => { if(e.key==='Enter') addManualItem(); });
+
+async function generateWardrobeOutfit() {
+  const style = document.getElementById('wardrobe-style-select').value;
+  if(!style || !wardrobe.length) return;
+  const resultEl = document.getElementById('wardrobe-ai-result');
+  resultEl.innerHTML = `
+    <div class="ai-result">
+      <div class="ai-result-header"><div class="ai-dot"></div><span class="ai-result-title">AI Stylist — Your wardrobe</span></div>
+      <div class="ai-result-body" id="wardrobe-ai-stream"><span class="cursor-blink"></span></div>
+    </div>`;
+
+  const items = wardrobe.map(w=>`${w.emoji} ${w.brand?w.brand+' — ':''}${w.name}`).join('\n');
+  const prompt = `You are an expert personal stylist. The user wants a ${style} outfit.\n\nThey have ONLY these items in their wardrobe:\n${items}\n\nCreate 2 complete outfit combinations using ONLY items from the list. For each:\n- A stylish outfit name\n- The exact pieces to wear\n- A short styling tip (1-2 sentences)\n\nEnd with a short wardrobe insight. Be creative and specific.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:900, stream:true, messages:[{role:'user',content:prompt}] })
+    });
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let full = '';
+    while(true) {
+      const {done,value} = await reader.read();
+      if(done) break;
+      for(const line of dec.decode(value).split('\n')) {
+        if(line.startsWith('data: ')) {
+          try {
+            const p = JSON.parse(line.slice(6).trim());
+            if(p.type==='content_block_delta'&&p.delta?.text) {
+              full+=p.delta.text;
+              const el = document.getElementById('wardrobe-ai-stream');
+              if(el) el.innerHTML = formatAI(full)+'<span class="cursor-blink"></span>';
+            }
+          } catch{}
+        }
+      }
+    }
+    const el = document.getElementById('wardrobe-ai-stream');
+    if(el) el.innerHTML = formatAI(full);
+  } catch(e) {
+    resultEl.innerHTML = `<p style="color:#f05;font-size:13px">Something went wrong.</p>`;
+  }
+}
+
+// ─── MINI WARDROBE SIDEBAR ────────────────────────────
+function renderWardrobeMini() {
+  const el = document.getElementById('wardrobe-mini-list');
+  if(!wardrobe.length) { el.innerHTML = `<div class="wardrobe-empty">No items yet</div>`; return; }
+  el.innerHTML = wardrobe.map((w,i)=>`
+    <div class="wardrobe-mini-item">
+      <span class="emoji">${w.emoji||getEmoji(w.name)}</span>
+      <span class="name">${w.name}</span>
+      <button class="remove" onclick="removeFromWardrobe(${i})">×</button>
+    </div>`).join('');
+}
+
+// ─── HELPERS ─────────────────────────────────────────
+function saveWardrobe() {
+  localStorage.setItem('drip_wardrobe', JSON.stringify(wardrobe));
+  updateWardrobeCount();
+  updateGenerateBtn();
+}
+function updateWardrobeCount() {
+  document.getElementById('wardrobe-count').textContent = wardrobe.length;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function formatAI(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em style="color:var(--accent);font-family:var(--font-display);font-size:18px;">$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+// ─── INIT ─────────────────────────────────────────────
+updateWardrobeCount();
+updateGenerateBtn();
+</script>
+</body>
+</html>
